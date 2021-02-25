@@ -4,10 +4,10 @@ require_once('db.php');
 require_once('../model/Response.php');
 require_once('../model/Task.php');
  
-try{
+try {
     $writeDB = DB::connectWriteDB();
     $readDB = DB::connectReadDB();
-}catch(PDOException $ex){
+} catch (PDOException $ex) {
     error_log("Connection Error - ".$ex,0);
     $response = new Response();
     $response->sethttpstatuscode(500);
@@ -17,9 +17,9 @@ try{
     exit();
 }
  
-if(array_key_exists("taskid",$_GET)){
+if (array_key_exists("taskid",$_GET)) {
     $taskid = $_GET['taskid'];
-    if($taskid == '' || !is_numeric($taskid)){
+    if ($taskid == '' || !is_numeric($taskid)) {
         $response = new Response();
         $response->sethttpstatuscode(400);
         $response->setSuccess(false);
@@ -28,16 +28,16 @@ if(array_key_exists("taskid",$_GET)){
         exit;
     }
  
-    if($_SERVER['REQUEST_METHOD'] === 'GET'){
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
  
-        try{
+        try {
             $query = $readDB->prepare('select id, title, description, DATE_FORMAT(deadline,"%d/%m/%Y %H:%i") as deadline, completed from tbltasks where id = :taskid');
             $query->bindParam(':taskid',$taskid, PDO::PARAM_INT);
             $query->execute();
             
             $rowCount = $query->rowCount();
  
-            if($rowCount === 0){
+            if ($rowCount === 0) {
                 $response = new Response();
                 $response->sethttpstatuscode(404);
                 $response->setSuccess(false);
@@ -45,7 +45,7 @@ if(array_key_exists("taskid",$_GET)){
                 $response->send();
                 exit;
             }
-            while($row = $query->fetch(PDO::FETCH_ASSOC)){
+            while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
                 $task = new Task($row['id'], $row['title'], $row['description'], $row['deadline'], $row['completed']);
                 $taskArray[] = $task->returnTaskAsArray();
             }
@@ -62,7 +62,7 @@ if(array_key_exists("taskid",$_GET)){
             $response->send();
             exit;
         }
-        catch(TaskException $ex){
+        catch (TaskException $ex) {
             $response = new Response();
             $response->sethttpstatuscode(500);
             $reposnse->setSuccess(false);
@@ -70,7 +70,7 @@ if(array_key_exists("taskid",$_GET)){
             $response->send();
             exit;
         }    
-        catch(PDOException $ex){
+        catch (PDOException $ex) {
             error_log("Database Query Error - ".$ex,0);
             $response = new Response();
             $response->sethttpstatuscode(500);
@@ -79,11 +79,42 @@ if(array_key_exists("taskid",$_GET)){
             $response->send();
             exit();
         }
-    }elseif($_SERVER['REQUEST_METHOD'] === 'DELETE'){
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        
+        try {
+            $query = $writeDB->prepare('delete from tbltasks where id = :taskid');
+            $query->bindParam(':taskid', $taskid, PDO::PARAM_INT);
+            $query->execute();
+
+            $rowCount = $query->rowCount();
+
+            if ($rowCount === 0) {
+                $response = new Response();
+                $response->sethttpstatuscode(404);
+                $response->setSuccess(false);
+                $response->addMessage("Task not Task");
+                $response->send();
+                exit();
+            }
+
+            $response = new Response();
+            $response->sethttpstatuscode(200);
+            $response->setSuccess(true);
+            $response->addMessage("Task deleted");
+            $response->send();
+            exit();
+        } catch (PDOException $ex) {
+            $response = new Response();
+            $response->sethttpstatuscode(500);
+            $response->setSuccess(false);
+            $response->addMessage("Failed to delete task.");
+            $response->send();
+            exit();
+        }
+
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'PATCH') {
  
-    }elseif($_SERVER['REQUEST_METHOD'] === 'PATCH'){
- 
-    }else{
+    } else {
         $response = new Response();
         $response->sethttpstatuscode(405);
         $response->setSuccess(false);
@@ -91,6 +122,6 @@ if(array_key_exists("taskid",$_GET)){
         $response->send();
         exit();
     }
-}else{
+} else {
     echo 'Key does not exist.';
 }
