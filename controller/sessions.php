@@ -163,11 +163,11 @@ if (array_key_exists("sessionid", $_GET)) {
             $query->bindParam(':id', $return_id, PDO::PARAM_INT);
             $query->execute();
             
-            $query = $writeDB->prepare('insert into tblsessions (userid, accesstoken, accesstokenexipry, refreshtoken, refreshtokenexpiry) values (:userid, :accesstoken, date_add(NOW(), INTERVAL 1000 SECOND))');
-            $query->bindParam('userid', $return_id, PDO::PARAM_INT);
+            $query = $writeDB->prepare('insert into tblsessions (userid, accesstoken, accesstokenexpiry, refreshtoken, refreshtokenexpiry) values (:userid, :accesstoken, date_add(NOW(), INTERVAL :accesstokenexpiryseconds SECOND), :refreshtoken, date_add(NOW(), INTERVAL :refreshtokenexpiryseconds SECOND))');
+            $query->bindParam(':userid', $return_id, PDO::PARAM_INT);
             $query->bindParam(':accesstoken', $accesstoken, PDO::PARAM_STR);
             $query->bindParam(':accesstokenexpiryseconds', $access_token_expiry_seconds, PDO::PARAM_INT);
-            $query->bindParan(':refreshtoken', $refreshtoken, PDO::PARAM_STR);
+            $query->bindParam(':refreshtoken', $refreshtoken, PDO::PARAM_STR);
             $query->bindParam(':refreshtokenexpiryseconds', $refresh_token_expiry_seconds, PDO::PARAM_INT);
             $query->execute();
 
@@ -182,7 +182,6 @@ if (array_key_exists("sessionid", $_GET)) {
             $returnData['refresh_token'] = $refreshtoken;
             $returnData['refresh_token_expires_in'] = $refresh_token_expiry_seconds;
 
-            $writeDB->rollBack();
             $response = new Response();
             $response->setHttpStatusCode(201);
             $response->setSuccess(true);
